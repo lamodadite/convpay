@@ -2,18 +2,25 @@ package com.zerobase.convpay.service;
 
 import com.zerobase.convpay.dto.PayCancelRequest;
 import com.zerobase.convpay.dto.PayCancelResponse;
-import com.zerobase.convpay.type.ConvenienceType;
 import com.zerobase.convpay.dto.PayRequest;
 import com.zerobase.convpay.dto.PayResponse;
+import com.zerobase.convpay.type.ConvenienceType;
 import com.zerobase.convpay.type.PayCancelResult;
 import com.zerobase.convpay.type.PayMethodType;
 import com.zerobase.convpay.type.PayResult;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ConveniencePayServiceTest {
-    ConveniencePayService conveniencePayService = new ConveniencePayService();
+    ConveniencePayService conveniencePayService = new ConveniencePayService(
+            new HashSet<>(
+                    Arrays.asList(new MoneyAdaptor(), new CardAdapter())
+            ),
+            new DiscountByPayMethod());
 
     @Test
     void pay_success() {
@@ -31,7 +38,7 @@ class ConveniencePayServiceTest {
     @Test
     void pay_fail() {
         //given
-        PayRequest payRequest = new PayRequest(PayMethodType.MONEY, ConvenienceType.G25, 1000_001);
+        PayRequest payRequest = new PayRequest(PayMethodType.MONEY, ConvenienceType.G25, 1500_001);
 
         //when
         PayResponse payResponse = conveniencePayService.pay(payRequest);

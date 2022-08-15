@@ -3,36 +3,46 @@ package com.zerobase.convpay.service;
 import com.zerobase.convpay.dto.*;
 import com.zerobase.convpay.type.*;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 public class ConveniencePayService { // 편결이
-    private final MoneyAdaptor moneyAdaptor = new MoneyAdaptor();
-    private final CardAdapter cardAdapter = new CardAdapter();
+    private final Map<PayMethodType, PaymentInterface> paymentInterfaceMap =
+            new HashMap<>();
+    private final DiscountInterface discountInterface;
+
+    public ConveniencePayService(Set<PaymentInterface> paymentInterfaceSet,
+                                 DiscountInterface discountInterface) {
+        paymentInterfaceSet.forEach(
+                paymentInterface -> paymentInterfaceMap.put(
+                        paymentInterface.getPayMethodType(),
+                        paymentInterface
+                )
+        );
+        this.discountInterface = discountInterface;
+    }
+
     public PayResponse pay(PayRequest payRequest) {
-        PaymentInterface paymentInterface;
+        PaymentInterface paymentInterface = paymentInterfaceMap.get(
+                payRequest.getPayMethodType()
+        );
 
-        if (payRequest.getPayMethodType() == PayMethodType.CARD) {
-            paymentInterface = cardAdapter;
-        } else {
-            paymentInterface = moneyAdaptor;
-        }
-
-        PaymentResult payment = paymentInterface.payment(payRequest.getPayAmount());
+        Integer discountedAmount = discountInterface.getDiscountedAmount(payRequest);
+        PaymentResult payment = paymentInterface.payment(discountedAmount);
 
         if (payment == PaymentResult.PAYMENT_FAIL) {
             return new PayResponse(PayResult.FAIL, 0);
         }
 
         //Success case
-        return new PayResponse(PayResult.SUCCESS, payRequest.getPayAmount());
+        return new PayResponse(PayResult.SUCCESS, discountedAmount);
     }
 
     public PayCancelResponse payCancel(PayCancelRequest payCancelRequest) {
-        PaymentInterface paymentInterface;
-
-        if (payCancelRequest.getPayMethodType() == PayMethodType.CARD) {
-            paymentInterface = cardAdapter;
-        } else {
-            paymentInterface = moneyAdaptor;
-        }
+        PaymentInterface paymentInterface = paymentInterfaceMap.get(
+                payCancelRequest.getPayMethodType()
+        );
 
         CancelPaymentResult cancelPaymentResult = paymentInterface.cancelPayment(payCancelRequest.getPayCancelAmount());
 
